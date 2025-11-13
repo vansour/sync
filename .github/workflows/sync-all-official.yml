@@ -20,28 +20,23 @@ jobs:
         id: get-repos
         run: |
           # 获取所有官方标准库（分 2 页获取）
-          REPOS=""
+          REPOS=()
           for page in 1 2; do
-            REPOS="$REPOS $(curl -s "https://registry.hub.docker.com/v2/repositories/library/?page=$page&page_size=100" | jq -r '.results[].name')"
+            REPOS+=($(curl -s "https://registry.hub.docker.com/v2/repositories/library/?page=$page&page_size=100" | jq -r '.results[].name'))
           done
           
-          # 去重并排序
-          REPOS=$(echo "$REPOS" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+          # 转换为 JSON 数组格式
+          REPOS_JSON=$(printf '%s\n' "${REPOS[@]}" | jq -R . | jq -s .)
           
-          # 如果指定了特定的 repos，使用指定的
-          if [ ! -z "${{ inputs.repos }}" ]; then
-            REPOS="${{ inputs.repos }}"
-          fi
-          
-          echo "repos=$REPOS" >> $GITHUB_OUTPUT
-          echo "获取到的仓库: $REPOS"
+          echo "repos=$REPOS_JSON" >> $GITHUB_OUTPUT
+          echo "获取到的仓库数量: ${#REPOS[@]}"
 
   sync:
     needs: fetch-repos
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        repo: ${{ fromJson(format('[{0}]', needs.fetch-repos.outputs.repos)) }}
+        repo: ${{ fromJson(needs.fetch-repos.outputs.repos) }}
       max-parallel: 2
     steps:
       - name: Login to Docker Hub
