@@ -1,4 +1,4 @@
-name: sync-debian
+name: sync-alpine
 
 on:
   schedule:
@@ -22,5 +22,4 @@ jobs:
 
       - name: pull and push
         run: |
-          docker pull docker.io/library/debian:trixie && docker tag docker.io/library/debian:trixie ghcr.io/vansour/debian:trixie && docker push ghcr.io/vansour/debian:trixie
-          docker pull docker.io/library/debian:trixie-slim && docker tag docker.io/library/debian:trixie-slim ghcr.io/vansour/debian:trixie-slim && docker push ghcr.io/vansour/debian:trixie-slim
+          docker pull docker.io/library/alpine:latest && docker tag docker.io/library/alpine:latest ghcr.io/vansour/alpine:latest && docker push ghcr.io/vansour/alpine:latest
