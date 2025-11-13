@@ -25,10 +25,10 @@ jobs:
             REPOS+=($(curl -s "https://registry.hub.docker.com/v2/repositories/library/?page=$page&page_size=100" | jq -r '.results[].name'))
           done
           
-          # 转换为 JSON 数组格式
-          REPOS_JSON=$(printf '%s\n' "${REPOS[@]}" | jq -R . | jq -s .)
+          # 转换为 JSON 数组格式（使用 -c 紧凑输出）
+          REPOS_JSON=$(printf '%s\n' "${REPOS[@]}" | jq -R . | jq -c -s .)
           
-          echo "repos=$REPOS_JSON" >> $GITHUB_OUTPUT
+          echo "repos=${REPOS_JSON}" >> $GITHUB_OUTPUT
           echo "获取到的仓库数量: ${#REPOS[@]}"
 
   sync:
