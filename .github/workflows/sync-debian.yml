@@ -1,0 +1,41 @@
+name: Sync docker.io/debian → ghcr.io/vansour/debian
+
+on:
+  schedule:
+    # 每月 01:00 UTC 跑一次
+    - cron: '0 0 1 * *'
+  workflow_dispatch:   # 手动触发按钮
+
+env:
+  SRC_REPO:  docker.io/library/debian
+  DST_REPO:  ghcr.io/vansour/debian
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write   # 允许写入 ghcr.io
+
+    steps:
+      - name: Install regctl
+        run: |
+          curl -L https://github.com/regclient/regclient/releases/latest/download/regctl-linux-amd64 -o /usr/local/bin/regctl
+          chmod +x /usr/local/bin/regctl
+
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Mirror all tags
+        run: |
+          # 拉取源仓库所有 tag 列表
+          TAGS=$(regctl tag list "${SRC_REPO}" --format '{{range .Tags}}{{.}}{{"\n"}}{{end}}')
+
+          # 逐个复制（regctl 会自动处理多架构 manifest）
+          for tag in $TAGS; do
+            echo "===> Syncing tag: $tag"
+            regctl image copy "${SRC_REPO}:${tag}" "${DST_REPO}:${tag}"
+          done
