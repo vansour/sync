@@ -1,4 +1,4 @@
-name: Sync docker.io/debian → ghcr.io/vansour/debian
+name: sync-debian
 
 on:
   schedule:
