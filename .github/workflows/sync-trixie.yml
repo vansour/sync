@@ -1,0 +1,111 @@
+name: sync-trixie
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'    # 每月1号运行一次
+  workflow_dispatch:       # 允许手动点击触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write      # 必须有这个权限才能推送到 GHCR
+
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Prepare Sources File
+        # 1. 预先生成新的源列表文件
+        # 使用 cat <<EOF 避免在命令行中处理复杂的转义字符
+        run: |
+          cat <<EOF > debian.sources
+          Types: deb
+          URIs: https://mirrors.vansour.top/debian
+          Suites: trixie trixie-updates trixie-backports
+          Components: main contrib non-free non-free-firmware
+          Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+          Types: deb-src
+          URIs: https://mirrors.vansour.top/debian
+          Suites: trixie trixie-updates trixie-backports
+          Components: main contrib non-free non-free-firmware
+          Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+          Types: deb
+          URIs: https://mirrors.vansour.top/debian-security
+          Suites: trixie-security
+          Components: main contrib non-free non-free-firmware
+          Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+
+          Types: deb-src
+          URIs: https://mirrors.vansour.top/debian-security
+          Suites: trixie-security
+          Components: main contrib non-free non-free-firmware
+          Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+          EOF
+
+      - name: Create Dockerfile
+        # 2. 动态生成 Dockerfile
+        # 关键逻辑：先用默认源装证书 -> 再替换为你的 HTTPS 源
+        run: |
+          cat <<EOF > Dockerfile
+          ARG BASE_IMAGE
+          FROM \${BASE_IMAGE}
+
+          # 步骤A: 使用官方默认源安装 ca-certificates
+          # 必须在切换源之前做，否则 apt 无法验证 https 证书
+          # Debian 13 原生支持 HTTPS，不需要安装 apt-transport-https
+          RUN apt-get update && \
+              apt-get install -y --no-install-recommends ca-certificates && \
+              rm -rf /var/lib/apt/lists/*
+
+          # 步骤B: 复制准备好的源文件到配置目录
+          COPY debian.sources /etc/apt/sources.list.d/debian.sources
+
+          # 步骤C: 清理旧的源配置
+          # 删除 mirrors 目录并清空旧的 list 文件，确保只使用上面的 debian.sources
+          RUN rm -rf /etc/apt/mirrors/ && \
+              > /etc/apt/sources.list
+          
+          # (可选) 步骤D: 验证新源是否工作正常
+          RUN apt-get update
+          EOF
+
+      - name: Build and Push Images
+        # 3. 构建并推送两个版本的镜像
+        run: |
+          # --- 构建 trixie (完整版) ---
+          echo "Building debian:trixie..."
+          docker build --build-arg BASE_IMAGE=docker.io/library/debian:trixie \
+            -t ghcr.io/vansour/debian:trixie .
+          docker push ghcr.io/vansour/debian:trixie
+
+          # --- 构建 trixie-slim (精简版) ---
+          echo "Building debian:trixie-slim..."
+          docker build --build-arg BASE_IMAGE=docker.io/library/debian:trixie-slim \
+            -t ghcr.io/vansour/debian:trixie-slim .
+          docker push ghcr.io/vansour/debian:trixie-slim
+
+          # --- 构建 trixie (精简版) ---
+          echo "Building rust:trixie..."
+          docker build --build-arg BASE_IMAGE=docker.io/library/rust:trixie \
+            -t ghcr.io/vansour/rust:trixie .
+          docker push ghcr.io/vansour/rust:trixie
+
+          # --- 构建 trixie (精简版) ---
+          echo "Building node:trixie..."
+          docker build --build-arg BASE_IMAGE=docker.io/library/node:trixie \
+            -t ghcr.io/vansour/node:trixie .
+          docker push ghcr.io/vansour/node:trixie
+
+          # --- 构建 trixie (精简版) ---
+          echo "Building postgres:trixie..."
+          docker build --build-arg BASE_IMAGE=docker.io/library/postgres:trixie \
+            -t ghcr.io/vansour/postgres:trixie .
+          docker push ghcr.io/vansour/postgres:trixie
