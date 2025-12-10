@@ -23,4 +23,3 @@ jobs:
       - name: pull and push
         run: |
           docker pull docker.io/library/rust:trixie && docker tag docker.io/library/rust:trixie ghcr.io/vansour/rust:trixie && docker push ghcr.io/vansour/rust:trixie
-          docker pull docker.io/library/rust:alpine && docker tag docker.io/library/rust:alpine ghcr.io/vansour/rust:alpine && docker push ghcr.io/vansour/rust:alpine
