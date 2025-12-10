@@ -80,31 +80,31 @@ jobs:
       - name: Build and Push Images
         # 3. 构建并推送两个版本的镜像
         run: |
-          # --- 构建 trixie (完整版) ---
+          # --- 构建 debian ---
           echo "Building debian:trixie..."
           docker build --build-arg BASE_IMAGE=docker.io/library/debian:trixie \
             -t ghcr.io/vansour/debian:trixie .
           docker push ghcr.io/vansour/debian:trixie
 
-          # --- 构建 trixie-slim (精简版) ---
+          # --- 构建 debian-slim ---
           echo "Building debian:trixie-slim..."
           docker build --build-arg BASE_IMAGE=docker.io/library/debian:trixie-slim \
             -t ghcr.io/vansour/debian:trixie-slim .
           docker push ghcr.io/vansour/debian:trixie-slim
 
-          # --- 构建 trixie (精简版) ---
+          # --- 构建 rust ---
           echo "Building rust:trixie..."
           docker build --build-arg BASE_IMAGE=docker.io/library/rust:trixie \
             -t ghcr.io/vansour/rust:trixie .
           docker push ghcr.io/vansour/rust:trixie
 
-          # --- 构建 trixie (精简版) ---
+          # --- 构建 node ---
           echo "Building node:trixie..."
           docker build --build-arg BASE_IMAGE=docker.io/library/node:trixie \
             -t ghcr.io/vansour/node:trixie .
           docker push ghcr.io/vansour/node:trixie
 
-          # --- 构建 trixie (精简版) ---
+          # --- 构建 postgres ---
           echo "Building postgres:trixie..."
           docker build --build-arg BASE_IMAGE=docker.io/library/postgres:trixie \
             -t ghcr.io/vansour/postgres:trixie .
