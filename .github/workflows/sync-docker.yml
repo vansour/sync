@@ -1,0 +1,65 @@
+name: sync-trixie
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'    # 每月1号运行一次
+  workflow_dispatch:       # 允许手动点击触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write      # 必须有这个权限才能推送到 GHCR
+
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Sync Images (Pull -> Tag -> Push)
+        run: |
+          # 定义需要同步的镜像列表 (格式: 镜像名:标签)
+          # 可以根据需要在这里轻松添加更多镜像
+          IMAGES=(
+            "debian:trixie"
+            "debian:trixie-slim"
+            "rust:trixie"
+            "node:trixie"
+            "postgres:trixie"
+            "openlist:latest"
+          )
+
+          # 目标命名空间 (根据你的配置是 vansour)
+          TARGET_NAMESPACE="vansour"
+
+          for IMG in "${IMAGES[@]}"; do
+            SRC_IMAGE="docker.io/library/${IMG}"
+            TARGET_IMAGE="ghcr.io/${TARGET_NAMESPACE}/${IMG}"
+
+            echo "----------------------------------------------------"
+            echo "🚀 Processing: $IMG"
+            echo "   Source: $SRC_IMAGE"
+            echo "   Target: $TARGET_IMAGE"
+
+            # 1. Pull: 尝试拉取源镜像
+            if docker pull "$SRC_IMAGE"; then
+              
+              # 2. Tag: 重命名镜像
+              docker tag "$SRC_IMAGE" "$TARGET_IMAGE"
+              
+              # 3. Push: 推送到 GHCR
+              docker push "$TARGET_IMAGE"
+              
+              echo "✅ Successfully synced: $IMG"
+
+              # 4. Cleanup: 删除本地镜像以节省 Runner 磁盘空间
+              docker rmi "$SRC_IMAGE" "$TARGET_IMAGE"
+            else
+              # 如果源镜像不存在（例如 Trixie 版本的 Postgres 还没发布），脚本不会中断，而是打印警告并继续下一个
+              echo "⚠️  Skipping $IMG: Source image not found or pull failed."
+            fi
+          done
