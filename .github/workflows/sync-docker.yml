@@ -1,4 +1,4 @@
-name: sync-trixie
+name: sync-docker
 
 on:
   schedule:
