@@ -30,7 +30,7 @@ jobs:
             "rust:trixie"
             "node:trixie"
             "postgres:trixie"
-            "openlist:latest"
+            "openlistteam/openlist:latest-aio"
           )
 
           # 目标命名空间 (根据你的配置是 vansour)
