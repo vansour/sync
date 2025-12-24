@@ -37,7 +37,7 @@ jobs:
           TARGET_NAMESPACE="vansour"
 
           for IMG in "${IMAGES[@]}"; do
-            SRC_IMAGE="docker.io/library/${IMG}"
+            SRC_IMAGE="docker.io/${IMG}"
             TARGET_IMAGE="ghcr.io/${TARGET_NAMESPACE}/${IMG}"
 
             echo "----------------------------------------------------"
